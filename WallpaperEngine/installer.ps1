@@ -1,4 +1,7 @@
 # Configuración de nombres y rutas
+$ErrorActionPreference = 'Stop'
+[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+
 $rarUrl       = "https://store-sa-sao-1.gofile.io/download/web/9204c5a0-e2da-4e50-8eb5-ffda18edc07e/Wallpaper.Engine.v2.5.28.rar"
 $folderName   = "Wallpaper Engine"
 $exeName      = "wallpaper32.exe"
@@ -52,9 +55,17 @@ function Extract-WithFallback {
 }
 
 try {
-    # Descargar el archivo .rar con salida detallada
+    # Crear la carpeta de destino (no forzamos que contenga los archivos internos, se respeta la estructura del RAR)
+    if (-Not (Test-Path $destination)) {
+        New-Item -ItemType Directory -Path $destination | Out-Null
+    }
+
     Write-Host "Descargando Wallpaper Engine..."
-    Invoke-WebRequest -Uri $rarUrl -OutFile $tempRar -Verbose -ErrorAction Stop
+    $headers = @{
+      "User-Agent" = "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
+    }
+    # Forzamos UseBasicParsing y establecemos encabezados
+    Invoke-WebRequest -Uri $rarUrl -OutFile $tempRar -UseBasicParsing -Headers $headers -Verbose -ErrorAction Stop
 
     # Esperar 2 segundos para confirmar que se guardó el archivo
     Start-Sleep -Seconds 2
@@ -68,11 +79,10 @@ try {
     # Verificar el tamaño del archivo descargado (ejemplo: debe ser mayor a 100 MB)
     $downloadedSize = (Get-Item $tempRar).Length
     Write-Host "Tamaño del archivo descargado: $downloadedSize bytes" -ForegroundColor Yellow
-    # 100 MB = 104857600 bytes
+    # 100 MB = 104857600 bytes (ajusta este valor si es necesario)
     if ($downloadedSize -lt 104857600) {
-        throw "El archivo descargado es muy pequeño (solo $downloadedSize bytes). Probablemente no es el archivo correcto."
+        throw "El archivo descargado es muy pequeño (solo $downloadedSize bytes). Probablemente se descargó una respuesta HTML en lugar del archivo real."
     }
-
     Write-Host "Descarga completada. Archivo guardado en: $tempRar" -ForegroundColor Green
 
     # Intentar extraer el contenido usando la función de extracción
@@ -81,7 +91,7 @@ try {
         throw "La extracción falló usando ambos métodos."
     }
 
-    # Verificar que se hayan extraído archivos
+    # Verificar que se hayan extraído archivos (incluyendo subcarpetas)
     $extractedFiles = Get-ChildItem -Path $destination -Recurse
     if ($extractedFiles.Count -eq 0) {
         throw "No se extrajeron archivos. Revisa el contenido del .rar."
