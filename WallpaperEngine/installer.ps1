@@ -23,14 +23,11 @@ function Extract-WithFallback {
     if (Test-Path $winRarPath) {
         Write-Host "Attempting to extract with WinRAR..."
         $process = Start-Process -FilePath $winRarPath -ArgumentList "x", $rarFile, "$destinationFolder\", "-y" -PassThru -Wait
-        Write-Host "WinRAR Exit Code: $($process.ExitCode)"
         if ($process.ExitCode -eq 0) {
             Write-Host "Extraction successful using WinRAR." -ForegroundColor Green
             return $true
         } else {
             Write-Host "WinRAR extraction failed. Exit code: $($process.ExitCode)" -ForegroundColor Red
-            $errorOutput = $process.StandardError.ReadToEnd()
-            Write-Host "Error Message from WinRAR: $errorOutput" -ForegroundColor Red
         }
     }
 
@@ -38,14 +35,11 @@ function Extract-WithFallback {
     if (Test-Path $sevenZipPath) {
         Write-Host "Attempting to extract with 7-Zip..."
         $process = Start-Process -FilePath $sevenZipPath -ArgumentList "x", $rarFile, "-o$destinationFolder", "-y" -PassThru -Wait
-        Write-Host "7-Zip Exit Code: $($process.ExitCode)"
         if ($process.ExitCode -eq 0) {
             Write-Host "Extraction successful using 7-Zip." -ForegroundColor Green
             return $true
         } else {
             Write-Host "7-Zip extraction failed. Exit code: $($process.ExitCode)" -ForegroundColor Red
-            $errorOutput = $process.StandardError.ReadToEnd()
-            Write-Host "Error Message from 7-Zip: $errorOutput" -ForegroundColor Red
         }
     }
 
