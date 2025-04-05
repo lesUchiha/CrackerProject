@@ -52,10 +52,25 @@ try {
     # Descargar el archivo .rar
     Write-Host "Downloading Wallpaper Engine..."
     Invoke-WebRequest -Uri $rarUrl -OutFile $tempRar -ErrorAction Stop
+    Write-Host "Download complete. File saved to $tempRar" -ForegroundColor Green
+
+    # Verificar si el archivo RAR fue descargado correctamente
+    if (-Not (Test-Path $tempRar)) {
+        throw "The downloaded file is missing or corrupt. Please try downloading again."
+    }
 
     # Intentar extraer con WinRAR o 7-Zip
+    Write-Host "Attempting extraction..."
     if (-Not (Extract-WithFallback -rarFile $tempRar -destinationFolder $destination)) {
         throw "Extraction failed with both WinRAR and 7-Zip."
+    }
+
+    # Verificar si los archivos fueron extraídos correctamente
+    $extractedFiles = Get-ChildItem -Path $destination
+    if ($extractedFiles.Count -eq 0) {
+        throw "No files were extracted. Please check the .rar file contents."
+    } else {
+        Write-Host "Files extracted successfully to $destination" -ForegroundColor Green
     }
 
     # Eliminar el archivo .rar temporal
@@ -69,7 +84,7 @@ try {
     $shortcut.WorkingDirectory = $destination
     $shortcut.Save()
 
-    Write-Host "Wallpaper Engine has been successfully downloaded and installed." -ForegroundColor Green
+    Write-Host "Wallpaper Engine has been successfully downloaded, installed, and a shortcut has been created." -ForegroundColor Green
 } catch {
     Write-Host "An error occurred: $_" -ForegroundColor Red
     if (Test-Path $tempRar) {
