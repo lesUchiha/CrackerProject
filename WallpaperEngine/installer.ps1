@@ -52,7 +52,7 @@ function Extract-WithFallback {
 }
 
 try {
-    # Descarga del archivo .rar con salida detallada
+    # Descargar el archivo .rar con salida detallada
     Write-Host "Descargando Wallpaper Engine..."
     Invoke-WebRequest -Uri $rarUrl -OutFile $tempRar -Verbose -ErrorAction Stop
 
@@ -64,6 +64,15 @@ try {
         Write-Host "La descarga falló. No se encontró el archivo en: $tempRar" -ForegroundColor Red
         throw "El archivo descargado está ausente o corrupto."
     }
+
+    # Verificar el tamaño del archivo descargado (ejemplo: debe ser mayor a 100 MB)
+    $downloadedSize = (Get-Item $tempRar).Length
+    Write-Host "Tamaño del archivo descargado: $downloadedSize bytes" -ForegroundColor Yellow
+    # 100 MB = 104857600 bytes
+    if ($downloadedSize -lt 104857600) {
+        throw "El archivo descargado es muy pequeño (solo $downloadedSize bytes). Probablemente no es el archivo correcto."
+    }
+
     Write-Host "Descarga completada. Archivo guardado en: $tempRar" -ForegroundColor Green
 
     # Intentar extraer el contenido usando la función de extracción
