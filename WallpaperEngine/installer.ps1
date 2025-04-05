@@ -1,102 +1,101 @@
-# Configura los nombres
-$rarUrl = "https://store-sa-sao-1.gofile.io/download/web/9204c5a0-e2da-4e50-8eb5-ffda18edc07e/Wallpaper.Engine.v2.5.28.rar"
-$folderName = "Wallpaper Engine"
-$exeName = "wallpaper32.exe"
-$destination = "$env:APPDATA\$folderName"
+# Configuración de nombres y rutas
+$rarUrl       = "https://store-sa-sao-1.gofile.io/download/web/9204c5a0-e2da-4e50-8eb5-ffda18edc07e/Wallpaper.Engine.v2.5.28.rar"
+$folderName   = "Wallpaper Engine"
+$exeName      = "wallpaper32.exe"
+$destination  = "$env:APPDATA\$folderName"
 $shortcutPath = "$env:APPDATA\Microsoft\Windows\Start Menu\Programs\Wallpaper Engine.lnk"
 
-# Ruta temporal para el .rar con el nombre correcto
+# Ruta temporal para guardar el archivo .rar con su nombre real
 $tempRar = "$env:TEMP\Wallpaper.Engine.v2.5.28.rar"
 
-# Rutas a WinRAR y 7-Zip
-$winRarPath = "C:\Program Files\WinRAR\WinRAR.exe"
+# Rutas a los programas de extracción
+$winRarPath   = "C:\Program Files\WinRAR\WinRAR.exe"
 $sevenZipPath = "C:\Program Files\7-Zip\7z.exe"
 
-# Función para intentar con WinRAR y luego con 7-Zip
+# Función que intenta extraer con WinRAR y, si falla, con 7-Zip
 function Extract-WithFallback {
     param (
         [string]$rarFile,
         [string]$destinationFolder
     )
 
-    # Intentar con WinRAR primero
+    # Intentar extraer con WinRAR
     if (Test-Path $winRarPath) {
-        Write-Host "Attempting to extract with WinRAR..."
+        Write-Host "Intentando extraer con WinRAR..."
         $process = Start-Process -FilePath $winRarPath -ArgumentList "x", $rarFile, "$destinationFolder\", "-y" -PassThru -Wait
-        Write-Host "WinRAR Exit Code: $($process.ExitCode)"
+        Write-Host "Código de salida de WinRAR: $($process.ExitCode)"
         if ($process.ExitCode -eq 0) {
-            Write-Host "Extraction successful using WinRAR." -ForegroundColor Green
+            Write-Host "Extracción exitosa usando WinRAR." -ForegroundColor Green
             return $true
-        } else {
-            Write-Host "WinRAR extraction failed. Exit code: $($process.ExitCode)" -ForegroundColor Red
-            $errorOutput = $process.StandardError.ReadToEnd()
-            Write-Host "Error Message from WinRAR: $errorOutput" -ForegroundColor Red
+        }
+        else {
+            Write-Host "Fallo en la extracción con WinRAR. Código de salida: $($process.ExitCode)" -ForegroundColor Red
         }
     }
-
-    # Si falló con WinRAR, intentar con 7-Zip
+    
+    # Si falla WinRAR, intenta extraer con 7-Zip
     if (Test-Path $sevenZipPath) {
-        Write-Host "Attempting to extract with 7-Zip..."
+        Write-Host "Intentando extraer con 7-Zip..."
         $process = Start-Process -FilePath $sevenZipPath -ArgumentList "x", $rarFile, "-o$destinationFolder", "-y" -PassThru -Wait
-        Write-Host "7-Zip Exit Code: $($process.ExitCode)"
+        Write-Host "Código de salida de 7-Zip: $($process.ExitCode)"
         if ($process.ExitCode -eq 0) {
-            Write-Host "Extraction successful using 7-Zip." -ForegroundColor Green
+            Write-Host "Extracción exitosa usando 7-Zip." -ForegroundColor Green
             return $true
-        } else {
-            Write-Host "7-Zip extraction failed. Exit code: $($process.ExitCode)" -ForegroundColor Red
-            $errorOutput = $process.StandardError.ReadToEnd()
-            Write-Host "Error Message from 7-Zip: $errorOutput" -ForegroundColor Red
+        }
+        else {
+            Write-Host "Fallo en la extracción con 7-Zip. Código de salida: $($process.ExitCode)" -ForegroundColor Red
         }
     }
-
-    # Si ambos fallaron
-    Write-Host "Both WinRAR and 7-Zip extraction failed. Please ensure that one of them is installed." -ForegroundColor Red
+    
+    Write-Host "La extracción falló con ambos métodos. Asegúrate de tener instalado WinRAR o 7-Zip." -ForegroundColor Red
     return $false
 }
 
 try {
-    # Descargar el archivo .rar con salida detallada
-    Write-Host "Downloading Wallpaper Engine..."
+    # Descarga del archivo .rar con salida detallada
+    Write-Host "Descargando Wallpaper Engine..."
     Invoke-WebRequest -Uri $rarUrl -OutFile $tempRar -Verbose -ErrorAction Stop
 
-    # Esperar 2 segundos para asegurarse de que la descarga se haya completado
+    # Esperar 2 segundos para confirmar que se guardó el archivo
     Start-Sleep -Seconds 2
 
-    # Verificar si el archivo RAR fue descargado correctamente
+    # Verificar que el archivo se descargó correctamente
     if (-Not (Test-Path $tempRar)) {
-        Write-Host "Download failed. File not found at $tempRar" -ForegroundColor Red
-        throw "The downloaded file is missing or corrupt. Please try downloading again."
+        Write-Host "La descarga falló. No se encontró el archivo en: $tempRar" -ForegroundColor Red
+        throw "El archivo descargado está ausente o corrupto."
     }
-    Write-Host "Download complete. File saved to $tempRar" -ForegroundColor Green
+    Write-Host "Descarga completada. Archivo guardado en: $tempRar" -ForegroundColor Green
 
-    # Intentar extraer con WinRAR o 7-Zip
-    Write-Host "Attempting extraction..."
+    # Intentar extraer el contenido usando la función de extracción
+    Write-Host "Intentando extraer el contenido..."
     if (-Not (Extract-WithFallback -rarFile $tempRar -destinationFolder $destination)) {
-        throw "Extraction failed with both WinRAR and 7-Zip."
+        throw "La extracción falló usando ambos métodos."
     }
 
-    # Verificar si los archivos fueron extraídos correctamente
-    $extractedFiles = Get-ChildItem -Path $destination
+    # Verificar que se hayan extraído archivos
+    $extractedFiles = Get-ChildItem -Path $destination -Recurse
     if ($extractedFiles.Count -eq 0) {
-        throw "No files were extracted. Please check the .rar file contents."
-    } else {
-        Write-Host "Files extracted successfully to $destination" -ForegroundColor Green
+        throw "No se extrajeron archivos. Revisa el contenido del .rar."
+    }
+    else {
+        Write-Host "Archivos extraídos exitosamente en: $destination" -ForegroundColor Green
     }
 
     # Eliminar el archivo .rar temporal
     Remove-Item $tempRar -ErrorAction SilentlyContinue
 
-    # Crear acceso directo
-    Write-Host "Creating shortcut..."
+    # Crear el acceso directo en el menú de inicio
+    Write-Host "Creando acceso directo..."
     $shell = New-Object -ComObject WScript.Shell
     $shortcut = $shell.CreateShortcut($shortcutPath)
     $shortcut.TargetPath = "$destination\$exeName"
     $shortcut.WorkingDirectory = $destination
     $shortcut.Save()
 
-    Write-Host "Wallpaper Engine has been successfully downloaded, installed, and a shortcut has been created." -ForegroundColor Green
-} catch {
-    Write-Host "An error occurred: $_" -ForegroundColor Red
+    Write-Host "Wallpaper Engine se ha descargado, instalado y se ha creado un acceso directo." -ForegroundColor Green
+}
+catch {
+    Write-Host "Ocurrió un error: $_" -ForegroundColor Red
     if (Test-Path $tempRar) {
         Remove-Item $tempRar -ErrorAction SilentlyContinue
     }
