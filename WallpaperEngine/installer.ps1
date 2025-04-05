@@ -11,6 +11,26 @@ $tempRar = "$env:TEMP\wallpaper_engine.rar"
 # Ruta a 7z.exe (asegúrate de que 7-Zip esté instalado y su ruta esté en el PATH)
 $sevenZipPath = "C:\Program Files\7-Zip\7z.exe"
 
+# Función para instalar 7-Zip si no está instalado
+function Install-7Zip {
+    Write-Host "7-Zip is not installed. Installing 7-Zip..."
+    $installerUrl = "https://www.7-zip.org/a/7z1900-x64.exe"
+    $installerPath = "$env:TEMP\7z_installer.exe"
+    
+    # Descargar el instalador de 7-Zip
+    Invoke-WebRequest -Uri $installerUrl -OutFile $installerPath -ErrorAction Stop
+    
+    # Instalar 7-Zip
+    Start-Process -FilePath $installerPath -ArgumentList "/S" -Wait
+    
+    # Verificar que 7-Zip se haya instalado correctamente
+    if (Test-Path $sevenZipPath) {
+        Write-Host "7-Zip installed successfully." -ForegroundColor Green
+    } else {
+        throw "Failed to install 7-Zip."
+    }
+}
+
 try {
     # Crear carpeta si no existe
     if (-Not (Test-Path $destination)) {
@@ -23,7 +43,7 @@ try {
 
     # Verificar si 7z.exe existe
     if (-Not (Test-Path $sevenZipPath)) {
-        throw "7-Zip not found at $sevenZipPath. Please install 7-Zip or update the script with the correct path."
+        Install-7Zip  # Instalar 7-Zip si no se encuentra
     }
 
     # Extraer el archivo .rar
