@@ -55,7 +55,7 @@ function Extract-WithFallback {
 }
 
 try {
-    # Create destination folder (doesn't force any internal structure, respects the RAR content)
+    # Create destination folder
     if (-Not (Test-Path $destination)) {
         New-Item -ItemType Directory -Path $destination | Out-Null
     }
@@ -64,7 +64,7 @@ try {
     $headers = @{
       "User-Agent" = "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
     }
-    Invoke-WebRequest -Uri $rarUrl -OutFile $tempRar -UseBasicParsing -Headers $headers -Verbose -ErrorAction Stop
+    Invoke-WebRequest -Uri $rarUrl -OutFile $tempRar -UseBasicParsing -Headers $headers -ErrorAction Stop
 
     # Wait 2 seconds to ensure file was saved
     Start-Sleep -Seconds 2
