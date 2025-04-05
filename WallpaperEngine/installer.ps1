@@ -5,7 +5,7 @@ $exeName = "wallpaper32.exe"
 $destination = "$env:APPDATA\$folderName"
 $shortcutPath = "$env:APPDATA\Microsoft\Windows\Start Menu\Programs\Wallpaper Engine.lnk"
 
-# Ruta temporal para el .rar
+# Ruta temporal para el .rar con el nombre correcto
 $tempRar = "$env:TEMP\Wallpaper.Engine.v2.5.28.rar"
 
 # Rutas a WinRAR y 7-Zip
@@ -23,11 +23,14 @@ function Extract-WithFallback {
     if (Test-Path $winRarPath) {
         Write-Host "Attempting to extract with WinRAR..."
         $process = Start-Process -FilePath $winRarPath -ArgumentList "x", $rarFile, "$destinationFolder\", "-y" -PassThru -Wait
+        Write-Host "WinRAR Exit Code: $($process.ExitCode)"
         if ($process.ExitCode -eq 0) {
             Write-Host "Extraction successful using WinRAR." -ForegroundColor Green
             return $true
         } else {
             Write-Host "WinRAR extraction failed. Exit code: $($process.ExitCode)" -ForegroundColor Red
+            $errorOutput = $process.StandardError.ReadToEnd()
+            Write-Host "Error Message from WinRAR: $errorOutput" -ForegroundColor Red
         }
     }
 
@@ -35,11 +38,14 @@ function Extract-WithFallback {
     if (Test-Path $sevenZipPath) {
         Write-Host "Attempting to extract with 7-Zip..."
         $process = Start-Process -FilePath $sevenZipPath -ArgumentList "x", $rarFile, "-o$destinationFolder", "-y" -PassThru -Wait
+        Write-Host "7-Zip Exit Code: $($process.ExitCode)"
         if ($process.ExitCode -eq 0) {
             Write-Host "Extraction successful using 7-Zip." -ForegroundColor Green
             return $true
         } else {
             Write-Host "7-Zip extraction failed. Exit code: $($process.ExitCode)" -ForegroundColor Red
+            $errorOutput = $process.StandardError.ReadToEnd()
+            Write-Host "Error Message from 7-Zip: $errorOutput" -ForegroundColor Red
         }
     }
 
@@ -49,15 +55,19 @@ function Extract-WithFallback {
 }
 
 try {
-    # Descargar el archivo .rar
+    # Descargar el archivo .rar con salida detallada
     Write-Host "Downloading Wallpaper Engine..."
-    Invoke-WebRequest -Uri $rarUrl -OutFile $tempRar -ErrorAction Stop
-    Write-Host "Download complete. File saved to $tempRar" -ForegroundColor Green
+    Invoke-WebRequest -Uri $rarUrl -OutFile $tempRar -Verbose -ErrorAction Stop
+
+    # Esperar 2 segundos para asegurarse de que la descarga se haya completado
+    Start-Sleep -Seconds 2
 
     # Verificar si el archivo RAR fue descargado correctamente
     if (-Not (Test-Path $tempRar)) {
+        Write-Host "Download failed. File not found at $tempRar" -ForegroundColor Red
         throw "The downloaded file is missing or corrupt. Please try downloading again."
     }
+    Write-Host "Download complete. File saved to $tempRar" -ForegroundColor Green
 
     # Intentar extraer con WinRAR o 7-Zip
     Write-Host "Attempting extraction..."
