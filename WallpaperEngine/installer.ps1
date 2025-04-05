@@ -1,6 +1,6 @@
 # Configura los nombres
-$zipUrl = "https://example.com/wallpaper_engine.zip"  # <-- Cambia esto por la URL real del ZIP
-$folderName = "WallpaperEngine"
+$zipUrl = "https://store-sa-sao-1.gofile.io/download/web/9204c5a0-e2da-4e50-8eb5-ffda18edc07e/Wallpaper.Engine.v2.5.28.rar"  # <-- Cambia esto por la URL real del ZIP
+$folderName = "Wallpaper Engine"
 $exeName = "wallpaper32.exe"
 $destination = "$env:APPDATA\$folderName"
 $shortcutPath = "$env:APPDATA\Microsoft\Windows\Start Menu\Programs\Wallpaper Engine.lnk"
