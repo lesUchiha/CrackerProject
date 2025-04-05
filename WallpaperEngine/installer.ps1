@@ -6,7 +6,7 @@ $destination = "$env:APPDATA\$folderName"
 $shortcutPath = "$env:APPDATA\Microsoft\Windows\Start Menu\Programs\Wallpaper Engine.lnk"
 
 # Ruta temporal para el .rar
-$tempRar = "$env:TEMP\wallpaper_engine.rar"
+$tempRar = "$env:TEMP\Wallpaper.Engine.v2.5.28.rar"
 
 # Rutas a WinRAR y 7-Zip
 $winRarPath = "C:\Program Files\WinRAR\WinRAR.exe"
