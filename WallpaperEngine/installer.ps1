@@ -8,27 +8,44 @@ $shortcutPath = "$env:APPDATA\Microsoft\Windows\Start Menu\Programs\Wallpaper En
 # Ruta temporal para el .rar
 $tempRar = "$env:TEMP\wallpaper_engine.rar"
 
-# Ruta a 7z.exe (asegúrate de que 7-Zip esté instalado y su ruta esté en el PATH)
+# Rutas a WinRAR y 7-Zip
+$winRarPath = "C:\Program Files\WinRAR\WinRAR.exe"
 $sevenZipPath = "C:\Program Files\7-Zip\7z.exe"
 
-# Función para instalar 7-Zip si no está instalado
-function Install-7Zip {
-    Write-Host "7-Zip is not installed. Installing 7-Zip..."
-    $installerUrl = "https://www.7-zip.org/a/7z1900-x64.exe"
-    $installerPath = "$env:TEMP\7z_installer.exe"
-    
-    # Descargar el instalador de 7-Zip
-    Invoke-WebRequest -Uri $installerUrl -OutFile $installerPath -ErrorAction Stop
-    
-    # Instalar 7-Zip
-    Start-Process -FilePath $installerPath -ArgumentList "/S" -Wait
-    
-    # Verificar que 7-Zip se haya instalado correctamente
-    if (Test-Path $sevenZipPath) {
-        Write-Host "7-Zip installed successfully." -ForegroundColor Green
-    } else {
-        throw "Failed to install 7-Zip."
+# Función para intentar con WinRAR y luego con 7-Zip
+function Extract-WithFallback {
+    param (
+        [string]$rarFile,
+        [string]$destinationFolder
+    )
+
+    # Intentar con WinRAR primero
+    if (Test-Path $winRarPath) {
+        Write-Host "Attempting to extract with WinRAR..."
+        Start-Process -FilePath $winRarPath -ArgumentList "x", $rarFile, "$destinationFolder\", "-y" -Wait
+        if ($?) {
+            Write-Host "Extraction successful using WinRAR." -ForegroundColor Green
+            return $true
+        } else {
+            Write-Host "WinRAR extraction failed." -ForegroundColor Red
+        }
     }
+
+    # Si falló con WinRAR, intentar con 7-Zip
+    if (Test-Path $sevenZipPath) {
+        Write-Host "Attempting to extract with 7-Zip..."
+        Start-Process -FilePath $sevenZipPath -ArgumentList "x", $rarFile, "-o$destinationFolder", "-y" -Wait
+        if ($?) {
+            Write-Host "Extraction successful using 7-Zip." -ForegroundColor Green
+            return $true
+        } else {
+            Write-Host "7-Zip extraction failed." -ForegroundColor Red
+        }
+    }
+
+    # Si ambos fallaron
+    Write-Host "Both WinRAR and 7-Zip extraction failed. Please ensure that one of them is installed." -ForegroundColor Red
+    return $false
 }
 
 try {
@@ -41,14 +58,10 @@ try {
     Write-Host "Downloading Wallpaper Engine..."
     Invoke-WebRequest -Uri $rarUrl -OutFile $tempRar -ErrorAction Stop
 
-    # Verificar si 7z.exe existe
-    if (-Not (Test-Path $sevenZipPath)) {
-        Install-7Zip  # Instalar 7-Zip si no se encuentra
+    # Intentar extraer con WinRAR o 7-Zip
+    if (-Not (Extract-WithFallback -rarFile $tempRar -destinationFolder $destination)) {
+        throw "Extraction failed with both WinRAR and 7-Zip."
     }
-
-    # Extraer el archivo .rar
-    Write-Host "Extracting files using 7-Zip..."
-    Start-Process -FilePath $sevenZipPath -ArgumentList "x", $tempRar, "-o$destination", "-y" -Wait
 
     # Eliminar el archivo .rar temporal
     Remove-Item $tempRar -ErrorAction SilentlyContinue
