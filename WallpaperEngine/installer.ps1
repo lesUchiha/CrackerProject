@@ -22,24 +22,24 @@ function Extract-WithFallback {
     # Intentar con WinRAR primero
     if (Test-Path $winRarPath) {
         Write-Host "Attempting to extract with WinRAR..."
-        Start-Process -FilePath $winRarPath -ArgumentList "x", $rarFile, "$destinationFolder\", "-y" -Wait
-        if ($?) {
+        $process = Start-Process -FilePath $winRarPath -ArgumentList "x", $rarFile, "$destinationFolder\", "-y" -PassThru -Wait
+        if ($process.ExitCode -eq 0) {
             Write-Host "Extraction successful using WinRAR." -ForegroundColor Green
             return $true
         } else {
-            Write-Host "WinRAR extraction failed." -ForegroundColor Red
+            Write-Host "WinRAR extraction failed. Exit code: $($process.ExitCode)" -ForegroundColor Red
         }
     }
 
     # Si falló con WinRAR, intentar con 7-Zip
     if (Test-Path $sevenZipPath) {
         Write-Host "Attempting to extract with 7-Zip..."
-        Start-Process -FilePath $sevenZipPath -ArgumentList "x", $rarFile, "-o$destinationFolder", "-y" -Wait
-        if ($?) {
+        $process = Start-Process -FilePath $sevenZipPath -ArgumentList "x", $rarFile, "-o$destinationFolder", "-y" -PassThru -Wait
+        if ($process.ExitCode -eq 0) {
             Write-Host "Extraction successful using 7-Zip." -ForegroundColor Green
             return $true
         } else {
-            Write-Host "7-Zip extraction failed." -ForegroundColor Red
+            Write-Host "7-Zip extraction failed. Exit code: $($process.ExitCode)" -ForegroundColor Red
         }
     }
 
@@ -49,11 +49,6 @@ function Extract-WithFallback {
 }
 
 try {
-    # Crear carpeta si no existe
-    if (-Not (Test-Path $destination)) {
-        New-Item -ItemType Directory -Path $destination | Out-Null
-    }
-
     # Descargar el archivo .rar
     Write-Host "Downloading Wallpaper Engine..."
     Invoke-WebRequest -Uri $rarUrl -OutFile $tempRar -ErrorAction Stop
